@@ -1,6 +1,12 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import prisma from "./lib/db";
+
+class InvalidLoginError extends CredentialsSignin {
+  code = "Invalid identifier or password";
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -22,21 +28,33 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           placeholder: "Enter your password here",
         },
       },
-      authorize: (credentials) => {
+      authorize: async (credentials) => {
         const email = credentials.email as string | undefined;
         const password = credentials.password as string | undefined;
-        console.log(email, password);
-        if (password !== "abcd") {
-          throw new CredentialsSignin({ cause: "password not match" });
-          return;
+
+        if (!email || !password) {
+          throw new InvalidLoginError();
+        }
+        const user = await prisma.user.findUnique({
+          where: {
+            email: email,
+          },
+        });
+        if (!user) {
+          throw new InvalidLoginError();
         }
 
-        const user = {
-          email,
-          id: "abc",
-        };
-        return user;
+        const passwordIsMached = await bcrypt.compare(password, user.password);
+
+        if (passwordIsMached == false) {
+          throw new InvalidLoginError();
+        }
+        const { password: passwordA, ...rest } = user;
+        return rest;
       },
     }),
   ],
+  pages: {
+    signIn: "/signin",
+  },
 });

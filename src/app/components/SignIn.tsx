@@ -1,16 +1,16 @@
 "use client";
+
 import React, { useState } from "react";
 import { Alert, Button, Divider, TextField } from "@mui/material";
 import { FcGoogle } from "react-icons/fc";
-
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 import { signInFuntion } from "../utils/signInFunction";
 
-export default function AuthCard({ page }: { page: string }) {
-  const redirectPage = page === "SIGN IN" ? "signup" : "signin";
-  const router = useRouter();
+export default function SignIn() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const router = useRouter();
   const [fromData, setFromData] = useState({
     username: "",
     password: "",
@@ -27,36 +27,23 @@ export default function AuthCard({ page }: { page: string }) {
     e.preventDefault();
     setErrorMessage(null);
 
-    if (redirectPage !== "signin") {
-      const { email, password } = fromData;
-      signInFuntion({ email, password });
-    } else {
-      try {
-        const response = await fetch("/api/signup", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(fromData),
-        });
-
-        const data = await response.text();
-        if (!response.ok) {
-          setErrorMessage(data);
-        } else {
-          router.push("/signin");
-        }
-      } catch (error) {
-        console.error("Error during signup:", error);
-        setErrorMessage("An unexpected error occurred. Please try again.");
-      }
+    const { email, password } = fromData;
+    if (email == "" || password == "") {
+      setErrorMessage("please insert all the fields");
+      return;
+    }
+    try {
+      await signInFuntion({ email, password });
+      router.push("/");
+    } catch (error) {
+      setErrorMessage("wrong credentials");
     }
   };
 
   return (
     <div className=" shadow-2xl w-[400px] min-h-[600px] p-10 flex justify-center items-center flex-col relative gap-3 rounded-md">
       <h1 className=" absolute top-3 text-3xl tracking-widest font-sans font-semibold">
-        {page}{" "}
+        Sign In
       </h1>
       <form className="w-full flex  flex-col gap-5" onSubmit={handleSubmit}>
         <div>
@@ -70,19 +57,7 @@ export default function AuthCard({ page }: { page: string }) {
             autoComplete="current-email"
           />
         </div>
-        {redirectPage !== "signup" && (
-          <div>
-            <TextField
-              className="w-[95%]"
-              label="Username"
-              type="text"
-              name="username"
-              value={fromData.username}
-              onChange={(e) => handleChange(e)}
-              autoComplete="current-email"
-            />
-          </div>
-        )}
+
         <div>
           <TextField
             className="w-[95%]"
@@ -101,7 +76,7 @@ export default function AuthCard({ page }: { page: string }) {
         )}
         {
           <Button className="w-[95%]" variant="contained" type="submit">
-            {page}
+            Sing In
           </Button>
         }
       </form>
@@ -114,11 +89,9 @@ export default function AuthCard({ page }: { page: string }) {
       </form>
       <Link
         className="text-blue-500 mt-10 hover:text-blue-300"
-        href={`/${redirectPage}`}
+        href={`/signup`}
       >
-        {redirectPage !== "signin"
-          ? "don't have an account? sign up"
-          : "already have an account? sign in"}
+        don't have an account? sign up
       </Link>
     </div>
   );
